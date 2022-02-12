@@ -1,7 +1,10 @@
 from itertools import tee
-from flask import Flask
+from flask import Flask, request
+from flask_cors import CORS, cross_origin
+
 
 app = Flask(__name__)
+CORS(app)
 
 text = """hi on medical I need to have the address of an emergency
 I don't know the address it's the coffee being in Carmel Mountain
@@ -36,3 +39,12 @@ fires are not on fire fire superficial yeah okay so I don't have them okay thank
 def hello():
     return text
     # return "Hello, World!"
+
+@cross_origin()
+@app.route("/transcribe", methods = ['GET', 'POST'])
+def transcribe():
+    if request.method == 'GET':
+        return text
+    if request.method == 'POST':
+        print(request.files['myFile'].read())
+        return request.method
