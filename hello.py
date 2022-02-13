@@ -53,10 +53,12 @@ def transcribe():
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
             sample_rate_hertz=8000,
-            language_code="en-US"
+            language_code="en-US",
+            # audio_channel_count=2
         )
         response = client.recognize(config=config, audio=audio)
+        speech_to_text = ""
         for result in response.results:
             # The first alternative is the most likely one for this portion.
-            print(u"Transcript: {}".format(result.alternatives[0].transcript))
-        return request.method
+            speech_to_text += result.alternatives[0].transcript
+        return speech_to_text
