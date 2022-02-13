@@ -46,5 +46,5 @@ def transcribe():
     if request.method == 'GET':
         return text
     if request.method == 'POST':
-        print(request.files['myFile'].read())
+        file_bytes = request.files['myFile'].read()
         return request.method
