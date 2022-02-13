@@ -1,8 +1,10 @@
 from itertools import tee
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
+from google.cloud import speech
+import io
 
-
+client = speech.SpeechClient()
 app = Flask(__name__)
 CORS(app)
 
@@ -47,4 +49,14 @@ def transcribe():
         return text
     if request.method == 'POST':
         file_bytes = request.files['myFile'].read()
+        audio = speech.RecognitionAudio(content=file_bytes)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=8000,
+            language_code="en-US"
+        )
+        response = client.recognize(config=config, audio=audio)
+        for result in response.results:
+            # The first alternative is the most likely one for this portion.
+            print(u"Transcript: {}".format(result.alternatives[0].transcript))
         return request.method
