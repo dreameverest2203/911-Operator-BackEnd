@@ -78,4 +78,9 @@ def recognize_entities():
     document = {"content": text_content, "type_": type_, "language": language}
     response = languageClient.analyze_entities(request = {'document': document, 'encoding_type': encoding_type})
     print(response)
-    return json.dumps(MessageToJson(response._pb))
+
+    responseDict = dict()
+    for entity in response.entities:
+        if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
+            responseDict['address'] = MessageToDict(entity._pb)
+    return json.dumps(responseDict)
