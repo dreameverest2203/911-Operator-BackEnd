@@ -5,6 +5,7 @@ from google.cloud import speech
 from google.cloud import language_v1
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
+import json
 
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
@@ -69,12 +70,12 @@ def transcribe():
 @cross_origin()
 @app.route("/recognize", methods = ['POST'])
 def recognize_entities():
-    text_content = request.data
-
+    text_content = request.form['transcription']
     type_ = language_v1.Document.Type.PLAIN_TEXT
     language = "en"
     encoding_type = language_v1.EncodingType.UTF8
 
     document = {"content": text_content, "type_": type_, "language": language}
     response = languageClient.analyze_entities(request = {'document': document, 'encoding_type': encoding_type})
-    return MessageToJson(response._pb)
+    print(response)
+    return json.dumps(MessageToJson(response._pb))
