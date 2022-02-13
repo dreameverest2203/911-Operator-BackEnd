@@ -2,9 +2,12 @@ from itertools import tee
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from google.cloud import speech
+from google.cloud import language_v1
+from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
 
-client = speech.SpeechClient()
+speechClient = speech.SpeechClient()
+languageClient = language_v1.LanguageServiceClient()
 app = Flask(__name__)
 CORS(app)
 
@@ -55,8 +58,21 @@ def transcribe():
             sample_rate_hertz=8000,
             language_code="en-US"
         )
-        response = client.recognize(config=config, audio=audio)
+        response = speechClient.recognize(config=config, audio=audio)
         for result in response.results:
             # The first alternative is the most likely one for this portion.
             print(u"Transcript: {}".format(result.alternatives[0].transcript))
         return request.method
+
+@cross_origin()
+@app.route("/recognize", methods = ['POST'])
+def recognize_entities():
+    text_content = request.data
+
+    type_ = language_v1.Document.Type.PLAIN_TEXT
+    language = "en"
+    encoding_type = language_v1.EncodingType.UTF8
+
+    document = {"content": text_content, "type_": type_, "language": language}
+    response = languageClient.analyze_entities(request = {'document': document, 'encoding_type': encoding_type})
+    return MessageToJson(response._pb)
