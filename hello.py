@@ -6,7 +6,9 @@ from google.cloud import language_v1
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
 import json
+import os
 
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/dhruva/friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
 app = Flask(__name__)
@@ -77,10 +79,9 @@ def recognize_entities():
 
     document = {"content": text_content, "type_": type_, "language": language}
     response = languageClient.analyze_entities(request = {'document': document, 'encoding_type': encoding_type})
-    print(response)
 
     responseDict = dict()
     for entity in response.entities:
-        if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION":
             responseDict['address'] = MessageToDict(entity._pb)
     return json.dumps(responseDict)
