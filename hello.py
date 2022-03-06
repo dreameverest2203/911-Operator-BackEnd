@@ -8,7 +8,9 @@ import io
 import json
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/dhruva/friendly-maker-340500-0a1a144d21e5.json"
+os.environ[
+    "GOOGLE_APPLICATION_CREDENTIALS"
+] = "/home/dhruva/friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
 app = Flask(__name__)
@@ -48,13 +50,14 @@ def hello():
     return text
     # return "Hello, World!"
 
+
 @cross_origin()
-@app.route("/transcribe", methods = ['GET', 'POST'])
+@app.route("/transcribe", methods=["GET", "POST"])
 def transcribe():
-    if request.method == 'GET':
+    if request.method == "GET":
         return text
-    if request.method == 'POST':
-        file_bytes = request.files['myFile'].read()
+    if request.method == "POST":
+        file_bytes = request.files["myFile"].read()
         audio = speech.RecognitionAudio(content=file_bytes)
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
@@ -69,19 +72,24 @@ def transcribe():
             speech_to_text += result.alternatives[0].transcript
         return speech_to_text
 
+
 @cross_origin()
-@app.route("/recognize", methods = ['POST'])
+@app.route("/recognize", methods=["POST"])
 def recognize_entities():
-    text_content = request.form['transcription']
+    text_content = request.form["transcription"]
     type_ = language_v1.Document.Type.PLAIN_TEXT
     language = "en"
     encoding_type = language_v1.EncodingType.UTF8
 
     document = {"content": text_content, "type_": type_, "language": language}
-    response = languageClient.analyze_entities(request = {'document': document, 'encoding_type': encoding_type})
-
+    response = languageClient.analyze_entities(
+        request={"document": document, "encoding_type": encoding_type}
+    )
     responseDict = dict()
     for entity in response.entities:
         if language_v1.Entity.Type(entity.type_).name == "LOCATION":
-            responseDict['address'] = MessageToDict(entity._pb)
+            print(entity._pb.mentions[0].text.content)
+            if "address" not in responseDict:
+                responseDict["address"] = ""
+            responseDict["address"] += str(entity._pb.mentions[0].text.content) + " "
     return json.dumps(responseDict)
