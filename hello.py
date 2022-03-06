@@ -10,7 +10,7 @@ import os
 
 os.environ[
     "GOOGLE_APPLICATION_CREDENTIALS"
-] = "/home/dhruva/friendly-maker-340500-0a1a144d21e5.json"
+] = "friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
 app = Flask(__name__)
