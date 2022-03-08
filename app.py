@@ -2,6 +2,7 @@ from itertools import tee
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from google.cloud import speech, language_v1, storage
+from googleplaces import GooglePlaces, types, lang
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
 import json
@@ -68,19 +69,59 @@ def recognize_entities():
     for entity in response.entities:
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             responseDict["address"] = str(entity._pb.mentions[0].text.content)
-        
-        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(map(str.isdigit, str(entity._pb.mentions[0].text.content))):
+
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(
+            map(str.isdigit, str(entity._pb.mentions[0].text.content))
+        ):
             responseDict["location"] = str(entity._pb.mentions[0].text.content)
-    
-    response = responseDict['address'] if 'address' in responseDict else responseDict['location']
-    return json.dumps({'address' : response})
+
+    response = (
+        responseDict["address"]
+        if "address" in responseDict
+        else responseDict["location"]
+    )
+    return json.dumps({"address": response})
+
 
 @cross_origin
-@app.route('/coordinates', methods=["POST"])
+@app.route("/coordinates", methods=["POST"])
 def get_loc():
     requested_location = "+".join(request.form["location"].split(" "))
-    request_url = f'https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}'
+    request_url = f"https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}"
     response = requests.get(request_url)
     resp_json_payload = response.json()
     print(resp_json_payload["results"][0]["geometry"]["location"])
     return resp_json_payload["results"][0]["geometry"]["location"]
+
+
+def get_nearest(lat, lng):
+    API_KEY = "AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg"
+    google_places = GooglePlaces(API_KEY)
+
+    hospital = google_places.nearby_search(
+        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_HOSPITAL]
+    )
+    fire = google_places.nearby_search(
+        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_FIRE_STATION]
+    )
+    police = google_places.nearby_search(
+        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_POLICE]
+    )
+    hospital = {
+        "name": hospital.places[0].name,
+        "lat": hospital.places[0].geo_location["lat"],
+        "lng": hospital.places[0].geo_location["lng"],
+    }
+
+    fire = {
+        "name": fire.places[0].name,
+        "lat": fire.places[0].geo_location["lat"],
+        "lng": fire.places[0].geo_location["lng"],
+    }
+
+    police = {
+        "name": fire.places[0].name,
+        "lat": fire.places[0].geo_location["lat"],
+        "lng": fire.places[0].geo_location["lng"],
+    }
+    return hospital, fire, police
