@@ -7,10 +7,9 @@ from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
 import json
 import os
+import requests
 
-os.environ[
-    "GOOGLE_APPLICATION_CREDENTIALS"
-] = "friendly-maker-340500-0a1a144d21e5.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
 app = Flask(__name__)
@@ -93,3 +92,13 @@ def recognize_entities():
                 responseDict["address"] = ""
             responseDict["address"] += str(entity._pb.mentions[0].text.content) + " "
     return json.dumps(responseDict)
+
+
+def get_loc():
+
+    response = requests.get(
+        "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address=1600+Amphitheatre+Parkway,+Mountain+View,+CA"
+    )
+
+    resp_json_payload = response.json()
+    return resp_json_payload["results"][0]["geometry"]["location"]
