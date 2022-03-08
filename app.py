@@ -125,3 +125,9 @@ def get_nearest(lat, lng):
         "lng": fire.places[0].geo_location["lng"],
     }
     return hospital, fire, police
+
+@cross_origin
+@app.route("/coordinates", methods=["POST"])
+def get_emergency():
+    emergencies = ['fire', 'heart attack', 'bleed', 'cut', 'burn', 'confusion', 'vomit', 'seizure', 'choke', 'unconscious', 'asthama', 'stroke', 'roberry', 'accident']
+    transcription = "+".join(request.form["transcription"].split(" "))
