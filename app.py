@@ -66,20 +66,27 @@ def recognize_entities():
     )
     responseDict = dict()
     for entity in response.entities:
-        if language_v1.Entity.Type(entity.type_).name == "LOCATION":
+        if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             print(entity._pb.mentions[0].text.content)
             if "address" not in responseDict:
                 responseDict["address"] = ""
             responseDict["address"] += str(entity._pb.mentions[0].text.content) + " "
-    return json.dumps(responseDict)
+        
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION":
+            print(entity._pb.mentions[0].text.content)
+            if "location" not in responseDict:
+                responseDict["location"] = ""
+            responseDict["location"] += str(entity._pb.mentions[0].text.content) + " "
+    
+    response = responseDict['address'] if 'address' in responseDict else responseDict['location']
+    return json.dumps({'address' : response})
 
 @cross_origin
 @app.route('/coordinates', methods=["POST"])
 def get_loc():
     requested_location = "+".join(request.form["location"].split(" "))
-    response = requests.get(
-        f"https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}"
-    )
-
+    request_url = f'https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}'
+    response = requests.get(request_url)
     resp_json_payload = response.json()
+    print(resp_json_payload["results"][0]["geometry"]["location"])
     return resp_json_payload["results"][0]["geometry"]["location"]
