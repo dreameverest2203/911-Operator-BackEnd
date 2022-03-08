@@ -93,11 +93,12 @@ def recognize_entities():
             responseDict["address"] += str(entity._pb.mentions[0].text.content) + " "
     return json.dumps(responseDict)
 
-
+@cross_origin
+@app.route('/coordinates', methods=["POST"])
 def get_loc():
-
+    requested_location = "+".join(request.form["location"].split(" "))
     response = requests.get(
-        "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address=1600+Amphitheatre+Parkway,+Mountain+View,+CA"
+        f"https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}"
     )
 
     resp_json_payload = response.json()
