@@ -46,10 +46,11 @@ def transcribe():
         audio = speech.RecognitionAudio(uri=gcs_uri)
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=8000,
+            # sample_rate_hertz=8000,
             language_code="en-US",
             audio_channel_count=2,
-            enable_separate_recognition_per_channel=True,
+            # enable_separate_recognition_per_channel=True,
+            enable_automatic_punctuation='noPunctuation' not in request.form,
         )
         operation = speechClient.long_running_recognize(config=config, audio=audio)
 
@@ -79,18 +80,11 @@ def recognize_entities():
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             responseDict["address"] = str(entity._pb.mentions[0].text.content)
 
-        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(
-            map(str.isdigit, str(entity._pb.mentions[0].text.content))
-        ):
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(map(str.isdigit, str(entity._pb.mentions[0].text.content))):
             responseDict["location"] = str(entity._pb.mentions[0].text.content)
 
-    response = (
-        responseDict["address"]
-        if "address" in responseDict
-        else responseDict["location"]
-    )
-    return json.dumps({"address": response})
-
+    response = responseDict['address'] if 'address' in responseDict else responseDict['location']
+    return json.dumps({'address' : response})
 
 @cross_origin
 @app.route("/coordinates", methods=["POST"])
@@ -142,7 +136,7 @@ def get_emergency():
     transcription = request.form["transcription"]
     transcription_tokens = word_tokenize(transcription)
     transcription_without_sw = list(set([word for word in transcription_tokens if not word in stopwords.words()]))
-    
+
     emergency_vectors = [word_to_vec[emergency] for emergency in emergencies]
     transcription_vectors = [word_to_vec[word] for word in transcription_without_sw if word in word_to_vec]
 
@@ -153,7 +147,7 @@ def get_emergency():
         for emergency_vector in emergency_vectors:
             curr_sum = min(curr_sum, np.linalg.norm(transcription_vector-emergency_vector))
         distance_sums.append(curr_sum)
-    
+
     emergency = transcription_without_sw[np.argmin(distance_sums)]
     return json.dumps({"emergency": emergency})
 
