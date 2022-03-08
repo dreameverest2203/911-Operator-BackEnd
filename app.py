@@ -67,16 +67,10 @@ def recognize_entities():
     responseDict = dict()
     for entity in response.entities:
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
-            print(entity._pb.mentions[0].text.content)
-            if "address" not in responseDict:
-                responseDict["address"] = ""
-            responseDict["address"] += str(entity._pb.mentions[0].text.content) + " "
+            responseDict["address"] = str(entity._pb.mentions[0].text.content)
         
-        if language_v1.Entity.Type(entity.type_).name == "LOCATION":
-            print(entity._pb.mentions[0].text.content)
-            if "location" not in responseDict:
-                responseDict["location"] = ""
-            responseDict["location"] += str(entity._pb.mentions[0].text.content) + " "
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(map(str.isdigit, str(entity._pb.mentions[0].text.content))):
+            responseDict["location"] = str(entity._pb.mentions[0].text.content)
     
     response = responseDict['address'] if 'address' in responseDict else responseDict['location']
     return json.dumps({'address' : response})
