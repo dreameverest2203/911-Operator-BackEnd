@@ -85,6 +85,10 @@ def recognize_entities():
     for entity in response.entities:
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             responseDict["address"] = str(entity._pb.mentions[0].text.content)
+            request_url = f"https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={str(entity._pb.mentions[0].text.content)}"
+            response = requests.get(request_url)
+            resp_json_payload = response.json()
+            responseDict["address"] = resp_json_payload["results"][0]['formatted_address']
 
         if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(
             map(str.isdigit, str(entity._pb.mentions[0].text.content))
