@@ -9,7 +9,16 @@ import json
 import os
 import requests
 import time
+from gensim import models
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+from nltk.tokenize import word_tokenize
+import numpy as np
 
+
+word_to_vec = models.KeyedVectors.load_word2vec_format(
+    'GoogleNews-vectors-negative300.bin.gz', binary=True)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
@@ -127,7 +136,27 @@ def get_nearest(lat, lng):
     return hospital, fire, police
 
 @cross_origin
-@app.route("/coordinates", methods=["POST"])
+@app.route("/emergency", methods=["POST"])
 def get_emergency():
-    emergencies = ['fire', 'heart attack', 'bleed', 'cut', 'burn', 'confusion', 'vomit', 'seizure', 'choke', 'unconscious', 'asthama', 'stroke', 'roberry', 'accident']
-    transcription = "+".join(request.form["transcription"].split(" "))
+    emergencies = ['fire', 'bleed', 'cut', 'burn', 'confusion', 'vomit', 'seizure', 'choke', 'unconscious', 'asthama', 'stroke', 'robbery', 'accident']
+    transcription = request.form["transcription"]
+    transcription_tokens = word_tokenize(transcription)
+    transcription_without_sw = list(set([word for word in transcription_tokens if not word in stopwords.words()]))
+    
+    emergency_vectors = [word_to_vec[emergency] for emergency in emergencies]
+    transcription_vectors = [word_to_vec[word] for word in transcription_without_sw if word in word_to_vec]
+
+    distance_sums = []
+
+    for transcription_vector in transcription_vectors:
+        curr_sum = float("inf")
+        for emergency_vector in emergency_vectors:
+            curr_sum = min(curr_sum, np.linalg.norm(transcription_vector-emergency_vector))
+        distance_sums.append(curr_sum)
+    
+    emergency = transcription_without_sw[np.argmin(distance_sums)]
+    return json.dumps({"emergency": emergency})
+
+
+
+
