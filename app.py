@@ -2,6 +2,7 @@ from itertools import tee
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from google.cloud import speech, language_v1, storage
+from google.cloud import translate_v2 as translate
 from googleplaces import GooglePlaces, types, lang
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
@@ -26,6 +27,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "friendly-maker-340500-0a1a144d21
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
 storage_client = storage.Client()
+translate_client = translate.Client()
 app = Flask(__name__)
 CORS(app)
 
@@ -196,3 +198,10 @@ def get_emergency():
 
     emergency = vectorized_words[np.argmin(distance_sums)]
     return json.dumps({"emergency": emergency})
+
+@cross_origin
+@app.route("/translate", methods=["POST"])
+def translate():
+    text = request.form["text"]
+    result = translate_client.translate(text, target_language="es")
+    return json.dumps({"text": result['translatedText']})
