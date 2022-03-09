@@ -166,17 +166,10 @@ def get_emergency():
     emergencies = [
         "fire",
         "bleed",
-        "cut",
-        "burn",
         "confusion",
-        "vomit",
-        "seizure",
         "choke",
-        "unconscious",
-        "asthama",
-        "stroke",
         "robbery",
-        "accident",
+        "accident"
     ]
     transcription = request.form["transcription"]
     transcription_tokens = word_tokenize(transcription)
@@ -192,16 +185,25 @@ def get_emergency():
 
     distance_sums = []
 
-    for transcription_vector in transcription_vectors:
+    for i, emergency_vector in enumerate(emergency_vectors):
         curr_sum = float("inf")
-        for emergency_vector in emergency_vectors:
+        for j, transcription_vector in enumerate(transcription_vectors):
+            if np.linalg.norm(transcription_vector - emergency_vector) < curr_sum:
+                print(emergencies[i], vectorized_words[j])
             curr_sum = min(
                 curr_sum, np.linalg.norm(transcription_vector - emergency_vector)
             )
         distance_sums.append(curr_sum)
-
-    emergency = vectorized_words[np.argmin(distance_sums)]
-    return json.dumps({"emergency": emergency})
+    emergency = emergencies[np.argmin(distance_sums)]
+    distance_sums = np.array(distance_sums)
+    distance_sums += 0.01
+    distance_sums = 1/distance_sums
+    distance_sums = (distance_sums / np.sum(distance_sums)) * 100
+    distance_sums = [(distance_sums[i], emergencies[i]) for i in range(len(distance_sums))]
+    distance_sums.sort(reverse = True)
+    distance_sums = [(str(a), b) for (a,b) in distance_sums]
+    print(distance_sums)
+    return json.dumps({"emergency": emergency, "scores": distance_sums})
 
 @cross_origin
 @app.route("/translate", methods=["POST"])
