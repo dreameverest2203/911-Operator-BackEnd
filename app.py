@@ -161,8 +161,9 @@ def get_nearest():
         police["dist"] = gmaps.distance_matrix([{'lat': lat, 'lng': lng}], [{'lat': police['lat'], 'lng': police['lng']}])['rows'][0]['elements'][0]['distance']['text'].split(" ")[0]
     else:
         police = {}
-
+    
     di = {"hospital": hospital, "fire": fire, "police": police}
+    print(di)
     return di
 
 
