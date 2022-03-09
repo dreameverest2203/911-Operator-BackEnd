@@ -202,6 +202,6 @@ def get_emergency():
 @cross_origin
 @app.route("/translate", methods=["POST"])
 def translate():
-    text = request.form["text"]
+    text = request.form["transcription"]
     result = translate_client.translate(text, target_language="es")
     return json.dumps({"text": result['translatedText']})
