@@ -4,6 +4,7 @@ from flask_cors import CORS, cross_origin
 from google.cloud import speech, language_v1, storage
 from google.cloud import translate_v2 as translate
 from googleplaces import GooglePlaces, types, lang
+import googlemaps
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import io
 import json
@@ -119,9 +120,11 @@ def get_nearest():
 
     API_KEY = "AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg"
     google_places = GooglePlaces(API_KEY)
+    gmaps = googlemaps.Client(API_KEY)
+
     lat, lng = request.form["lat"], request.form["lng"]
     hospital = google_places.nearby_search(
-        lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_HOSPITAL]
+    lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_HOSPITAL]
     )
     fire = google_places.nearby_search(
         lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_FIRE_STATION]
@@ -135,6 +138,7 @@ def get_nearest():
             "lat": float(hospital.places[0].geo_location["lat"]),
             "lng": float(hospital.places[0].geo_location["lng"]),
         }
+        hospital["dist"] = gmaps.distance_matrix([{'lat': lat, 'lng': lng}], [{'lat': hospital['lat'], 'lng': hospital['lng']}])['rows'][0]['elements'][0]['distance']['text'].split(" ")[0]
     else:
         hospital = {}
 
@@ -144,6 +148,7 @@ def get_nearest():
             "lat": float(fire.places[0].geo_location["lat"]),
             "lng": float(fire.places[0].geo_location["lng"]),
         }
+        fire["dist"] = gmaps.distance_matrix([{'lat': lat, 'lng': lng}], [{'lat': fire['lat'], 'lng': fire['lng']}])['rows'][0]['elements'][0]['distance']['text'].split(" ")[0]
     else:
         fire = {}
 
@@ -153,6 +158,7 @@ def get_nearest():
             "lat": float(police.places[0].geo_location["lat"]),
             "lng": float(police.places[0].geo_location["lng"]),
         }
+        police["dist"] = gmaps.distance_matrix([{'lat': lat, 'lng': lng}], [{'lat': police['lat'], 'lng': police['lng']}])['rows'][0]['elements'][0]['distance']['text'].split(" ")[0]
     else:
         police = {}
 
