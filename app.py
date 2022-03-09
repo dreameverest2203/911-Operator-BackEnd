@@ -8,17 +8,20 @@ import io
 import json
 import os
 import requests
+import pdb
 import time
 from gensim import models
 import nltk
 from nltk.corpus import stopwords
-nltk.download('stopwords')
+
+nltk.download("stopwords")
 from nltk.tokenize import word_tokenize
 import numpy as np
 
 
 word_to_vec = models.KeyedVectors.load_word2vec_format(
-    'GoogleNews-vectors-negative300.bin.gz', binary=True)
+    "GoogleNews-vectors-negative300.bin.gz", binary=True
+)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "friendly-maker-340500-0a1a144d21e5.json"
 speechClient = speech.SpeechClient()
 languageClient = language_v1.LanguageServiceClient()
@@ -50,7 +53,7 @@ def transcribe():
             language_code="en-US",
             audio_channel_count=2,
             # enable_separate_recognition_per_channel=True,
-            enable_automatic_punctuation='noPunctuation' not in request.form,
+            enable_automatic_punctuation="noPunctuation" not in request.form,
         )
         operation = speechClient.long_running_recognize(config=config, audio=audio)
 
@@ -80,11 +83,18 @@ def recognize_entities():
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             responseDict["address"] = str(entity._pb.mentions[0].text.content)
 
-        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(map(str.isdigit, str(entity._pb.mentions[0].text.content))):
+        if language_v1.Entity.Type(entity.type_).name == "LOCATION" and any(
+            map(str.isdigit, str(entity._pb.mentions[0].text.content))
+        ):
             responseDict["location"] = str(entity._pb.mentions[0].text.content)
 
-    response = responseDict['address'] if 'address' in responseDict else responseDict['location']
-    return json.dumps({'address' : response})
+    response = (
+        responseDict["address"]
+        if "address" in responseDict
+        else responseDict["location"]
+    )
+    return json.dumps({"address": response})
+
 
 @cross_origin
 @app.route("/coordinates", methods=["POST"])
@@ -97,48 +107,81 @@ def get_loc():
     return resp_json_payload["results"][0]["geometry"]["location"]
 
 
-def get_nearest(lat, lng):
+@cross_origin
+@app.route("/nearest", methods=["POST"])
+def get_nearest():
+
     API_KEY = "AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg"
     google_places = GooglePlaces(API_KEY)
-
+    lat, lng = request.form["lat"], request.form["lng"]
     hospital = google_places.nearby_search(
-        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_HOSPITAL]
+        lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_HOSPITAL]
     )
     fire = google_places.nearby_search(
-        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_FIRE_STATION]
+        lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_FIRE_STATION]
     )
     police = google_places.nearby_search(
-        lat_lng={"lat": lat, "lng": lng}, radius=3000, types=[types.TYPE_POLICE]
+        lat_lng={"lat": lat, "lng": lng}, radius=10000, types=[types.TYPE_POLICE]
     )
-    hospital = {
-        "name": hospital.places[0].name,
-        "lat": hospital.places[0].geo_location["lat"],
-        "lng": hospital.places[0].geo_location["lng"],
-    }
+    if len(hospital.places) > 0:
+        hospital = {
+            "name": hospital.places[0].name,
+            "lat": float(hospital.places[0].geo_location["lat"]),
+            "lng": float(hospital.places[0].geo_location["lng"]),
+        }
+    else:
+        hospital = {}
 
-    fire = {
-        "name": fire.places[0].name,
-        "lat": fire.places[0].geo_location["lat"],
-        "lng": fire.places[0].geo_location["lng"],
-    }
+    if len(fire.places) > 0:
+        fire = {
+            "name": fire.places[0].name,
+            "lat": float(fire.places[0].geo_location["lat"]),
+            "lng": float(fire.places[0].geo_location["lng"]),
+        }
+    else:
+        fire = {}
 
-    police = {
-        "name": fire.places[0].name,
-        "lat": fire.places[0].geo_location["lat"],
-        "lng": fire.places[0].geo_location["lng"],
-    }
-    return hospital, fire, police
+    if len(police.places) > 0:
+        police = {
+            "name": police.places[0].name,
+            "lat": float(police.places[0].geo_location["lat"]),
+            "lng": float(police.places[0].geo_location["lng"]),
+        }
+    else:
+        police = {}
+
+    di = {"hospital": hospital, "fire": fire, "police": police}
+    return di
+
 
 @cross_origin
 @app.route("/emergency", methods=["POST"])
 def get_emergency():
-    emergencies = ['fire', 'bleed', 'cut', 'burn', 'confusion', 'vomit', 'seizure', 'choke', 'unconscious', 'asthama', 'stroke', 'robbery', 'accident']
+    emergencies = [
+        "fire",
+        "bleed",
+        "cut",
+        "burn",
+        "confusion",
+        "vomit",
+        "seizure",
+        "choke",
+        "unconscious",
+        "asthama",
+        "stroke",
+        "robbery",
+        "accident",
+    ]
     transcription = request.form["transcription"]
     transcription_tokens = word_tokenize(transcription)
-    transcription_without_sw = list(set([word for word in transcription_tokens if not word in stopwords.words()]))
+    transcription_without_sw = list(
+        set([word for word in transcription_tokens if not word in stopwords.words()])
+    )
 
     emergency_vectors = [word_to_vec[emergency] for emergency in emergencies]
-    vectorized_words = [word for word in transcription_without_sw if word in word_to_vec]
+    vectorized_words = [
+        word for word in transcription_without_sw if word in word_to_vec
+    ]
     transcription_vectors = [word_to_vec[word] for word in vectorized_words]
 
     distance_sums = []
@@ -146,12 +189,10 @@ def get_emergency():
     for transcription_vector in transcription_vectors:
         curr_sum = float("inf")
         for emergency_vector in emergency_vectors:
-            curr_sum = min(curr_sum, np.linalg.norm(transcription_vector-emergency_vector))
+            curr_sum = min(
+                curr_sum, np.linalg.norm(transcription_vector - emergency_vector)
+            )
         distance_sums.append(curr_sum)
 
     emergency = vectorized_words[np.argmin(distance_sums)]
     return json.dumps({"emergency": emergency})
-
-
-
-
