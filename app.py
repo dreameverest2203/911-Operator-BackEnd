@@ -79,6 +79,7 @@ def recognize_entities():
         request={"document": document, "encoding_type": encoding_type}
     )
     responseDict = dict()
+    responseDict["location"] = "Not Found"
     for entity in response.entities:
         if language_v1.Entity.Type(entity.type_).name == "ADDRESS":
             responseDict["address"] = str(entity._pb.mentions[0].text.content)
@@ -103,8 +104,7 @@ def get_loc():
     request_url = f"https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCkQUJ2dXJ9z0EaM-NnVMlJJIrMbBt3yqg&address={requested_location}"
     response = requests.get(request_url)
     resp_json_payload = response.json()
-    print(resp_json_payload["results"][0]["geometry"]["location"])
-    return resp_json_payload["results"][0]["geometry"]["location"]
+    return resp_json_payload["results"][0]["geometry"]["location"] if len(resp_json_payload["results"]) > 0 else {'lat': 0, 'lng': 0}
 
 
 @cross_origin
