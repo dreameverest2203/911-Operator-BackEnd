@@ -138,7 +138,8 @@ def get_emergency():
     transcription_without_sw = list(set([word for word in transcription_tokens if not word in stopwords.words()]))
 
     emergency_vectors = [word_to_vec[emergency] for emergency in emergencies]
-    transcription_vectors = [word_to_vec[word] for word in transcription_without_sw if word in word_to_vec]
+    vectorized_words = [word for word in transcription_without_sw if word in word_to_vec]
+    transcription_vectors = [word_to_vec[word] for word in vectorized_words]
 
     distance_sums = []
 
@@ -148,7 +149,7 @@ def get_emergency():
             curr_sum = min(curr_sum, np.linalg.norm(transcription_vector-emergency_vector))
         distance_sums.append(curr_sum)
 
-    emergency = transcription_without_sw[np.argmin(distance_sums)]
+    emergency = vectorized_words[np.argmin(distance_sums)]
     return json.dumps({"emergency": emergency})
 
 
